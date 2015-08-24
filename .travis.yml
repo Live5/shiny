@@ -1,12 +1,36 @@
-language: r
-warnings_are_errors: true
+language: c
 
-r_binary_packages:
-  - Rcpp
-  - cairo
-  - knitr
+sudo: false
 
-notifications:
-  email:
-    on_success: change
-    on_failure: change
+env:
+  matrix:
+    - R_PKG="$(basename $TRAVIS_REPO_SLUG)"
+  global:
+    secure: "dzApXKPx17xOmGdEnZJ2UbFFwxTiL/kUOlYvAqelKsLVUNVrCZYwtAKuW4jQY6lx7mFqhx0iCDZTXJb2ylkmCBsWbgQ6SAVBqBFPSixULQ2UyKPBNcs1EtJEAjlr4qkWRpBevEvjmKv9kj3q9xTn5bRsfmJTma8jXJyxa/FCSOw="
+
+addons:
+  apt:
+    sources:
+    - r-packages-precise
+    packages:
+    - r-base-dev
+    - r-recommended
+
+install:
+  - "wget -q -O - http://yihui.name/xran/r-config | bash"
+  - Rscript -e "if (!require('devtools')) install.packages('devtools')"
+  - Rscript -e "devtools::install_deps(dep = TRUE)"
+
+cache:
+  directories:
+  - $HOME/R
+
+script:
+  - cd ..; rm -f *.tar.gz; R CMD build $R_PKG
+  - R CMD check ${R_PKG}_*.tar.gz --no-manual
+  - cd $R_PKG
+
+# deploy to XRAN
+after_success:
+  - set -e
+  - "(wget -q -O - http://yihui.name/xran/r-xran | bash)"
